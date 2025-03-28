@@ -12,7 +12,9 @@ export const translations = {
     bestStreak: 'Best Streak',
     clean: 'Clean',
     slips: 'Slips',
+    slip: 'Slip',
     relapses: 'Relapses',
+    relapse: 'Relapse',
     dailyCheckin: 'How was your day today?',
     stayedClean: 'I stayed clean',
     hadSlip: 'It was a slip',
@@ -44,7 +46,12 @@ export const translations = {
     loginButton: 'Login',
     welcome: 'Welcome',
     logout: 'Logout',
-    invalidCredentials: 'Invalid username or password'
+    invalidCredentials: 'Invalid username or password',
+    edit: 'Edit',
+    delete: 'Delete',
+    save: 'Save',
+    cancel: 'Cancel',
+    confirmDeleteJournal: 'Are you sure you want to delete this journal entry?'
   },
   ar: {
     appTitle: 'أبطال التعافي 🎯',
@@ -57,7 +64,9 @@ export const translations = {
     bestStreak: 'أفضل سلسلة',
     clean: 'نظيف',
     slips: 'زلات',
+    slip: 'زلة',
     relapses: 'انتكاسات',
+    relapse: 'انتكاسة',
     dailyCheckin: 'كيف كان يومك اليوم؟',
     stayedClean: 'بقيت نظيفاً',
     hadSlip: 'كانت زلة',
@@ -89,7 +98,12 @@ export const translations = {
     loginButton: 'تسجيل الدخول',
     welcome: 'مرحباً',
     logout: 'تسجيل الخروج',
-    invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة'
+    invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة',
+    edit: 'تعديل',
+    delete: 'حذف',
+    save: 'حفظ',
+    cancel: 'إلغاء',
+    confirmDeleteJournal: 'هل أنت متأكد من حذف هذا المدخل؟'
   }
 } as const;
 

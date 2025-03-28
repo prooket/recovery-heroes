@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Book as JournalBook, ListTodo, Moon, Plus, ChevronDown, Calendar, ChevronLeft, ChevronRight, Trash2, Trophy, Zap, AlertTriangle, LogOut } from 'lucide-react';
+import { CheckCircle2, Book as JournalBook, ListTodo, Moon, Plus, ChevronDown, Calendar, ChevronLeft, ChevronRight, Trash2, Trophy, Zap, AlertTriangle, LogOut, Pencil } from 'lucide-react';
 import { User, DayStatus, CalendarDay, JournalEntry, Task, UserData } from './types';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfDay, isSameMonth, addMonths, subMonths, differenceInDays, parseISO } from 'date-fns';
 import { translations, Language } from './translations';
@@ -326,8 +326,8 @@ function App() {
   const addJournalEntry = () => {
     if (newJournalEntry.trim()) {
       const title = newJournalStatus === 'clean' ? '🟢 ' + t.clean :
-                   newJournalStatus === 'slip' ? '🟠 ' + t.slips :
-                   '🔴 ' + t.relapses;
+                   newJournalStatus === 'slip' ? '🟠 ' + t.slip :
+                   '🔴 ' + t.relapse;
       
       setJournalEntries([
         {
@@ -340,6 +340,14 @@ function App() {
       ]);
       setNewJournalEntry('');
       setNewJournalStatus('clean');
+    }
+  };
+
+  const deleteJournalEntry = (index: number) => {
+    if (confirm(t.confirmDeleteJournal)) {
+      const updatedEntries = [...journalEntries];
+      updatedEntries.splice(index, 1);
+      setJournalEntries(updatedEntries);
     }
   };
 
@@ -388,11 +396,11 @@ function App() {
           <p className="text-2xl font-bold text-success">{stats.cleanDays}</p>
         </div>
         <div className="bg-warning/10 rounded-lg p-4 text-center">
-          <h4 className="text-warning font-semibold mb-1">{t.slips}</h4>
+          <h4 className="text-warning font-semibold mb-1">{t.slip}</h4>
           <p className="text-2xl font-bold text-warning">{stats.slips}</p>
         </div>
         <div className="bg-error/10 rounded-lg p-4 text-center">
-          <h4 className="text-error font-semibold mb-1">{t.relapses}</h4>
+          <h4 className="text-error font-semibold mb-1">{t.relapse}</h4>
           <p className="text-2xl font-bold text-error">{stats.relapses}</p>
         </div>
       </div>
@@ -486,14 +494,14 @@ function App() {
                 <div className="bg-warning/10 rounded-lg p-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <AlertTriangle size={20} className="text-warning" />
-                    <h3 className="text-warning font-semibold">{t.slips}</h3>
+                    <h3 className="text-warning font-semibold">{t.slip}</h3>
                   </div>
                   <p className="text-2xl font-bold text-center text-warning">{currentUser?.slips || 0}</p>
                 </div>
                 <div className="bg-error/10 rounded-lg p-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Zap size={20} className="text-error" />
-                    <h3 className="text-error font-semibold">{t.relapses}</h3>
+                    <h3 className="text-error font-semibold">{t.relapse}</h3>
                   </div>
                   <p className="text-2xl font-bold text-center text-error">{currentUser?.relapses || 0}</p>
                 </div>
@@ -590,8 +598,8 @@ function App() {
                   }`}
                 >
                   <option value="clean" className="bg-surface text-success">🟢 {t.clean}</option>
-                  <option value="slip" className="bg-surface text-warning">🟠 {t.slips}</option>
-                  <option value="relapse" className="bg-surface text-error">🔴 {t.relapses}</option>
+                  <option value="slip" className="bg-surface text-warning">🟠 {t.slip}</option>
+                  <option value="relapse" className="bg-surface text-error">🔴 {t.relapse}</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" size={20} />
               </div>
@@ -612,10 +620,21 @@ function App() {
               {journalEntries.map((entry, index) => (
                 <div key={index} className="bg-surface rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-semibold">{entry.title}</h3>
-                    <span className="text-primary/70 text-sm">
-                      {format(entry.date, 'PPP p')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">{entry.title}</h3>
+                      <span className="text-primary/70 text-sm">
+                        {format(entry.date, 'PPP p')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => deleteJournalEntry(index)}
+                        className="text-error/70 hover:text-error transition-colors p-1"
+                        title={t.delete}
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-on-surface whitespace-pre-wrap">{entry.content}</p>
                 </div>
