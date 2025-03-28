@@ -37,7 +37,14 @@ export const translations = {
       'Hobbies',
       'Talking to friends',
       'Other custom tasks'
-    ]
+    ],
+    login: 'Login',
+    username: 'Username',
+    password: 'Password',
+    loginButton: 'Login',
+    welcome: 'Welcome',
+    logout: 'Logout',
+    invalidCredentials: 'Invalid username or password'
   },
   ar: {
     appTitle: 'أبطال التعافي 🎯',
@@ -63,7 +70,7 @@ export const translations = {
     writeThoughts: 'اكتب أفكارك لليوم...',
     saveEntry: 'حفظ المدخل',
     deleteTask: 'حذف المهمة',
-    weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    weekDays: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
     notifications: {
       clean: 'عمل رائع في البقاء نظيفاً اليوم! استمر قوياً! 💪',
       slip: 'تذكر، الزلة ليست سقوطاً. انهض واستمر! 🌟',
@@ -75,7 +82,14 @@ export const translations = {
       'الهوايات',
       'التحدث مع الأصدقاء',
       'مهام مخصصة أخرى'
-    ]
+    ],
+    login: 'تسجيل الدخول',
+    username: 'اسم المستخدم',
+    password: 'كلمة المرور',
+    loginButton: 'تسجيل الدخول',
+    welcome: 'مرحباً',
+    logout: 'تسجيل الخروج',
+    invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة'
   }
 } as const;
 

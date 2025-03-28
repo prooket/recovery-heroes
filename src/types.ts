@@ -2,6 +2,8 @@ export type DayStatus = 'clean' | 'slip' | 'relapse';
 
 export interface User {
   id: string;
+  username: string;
+  password: string;
   name: string;
   cleanDays: number;
   slips: number;
@@ -28,4 +30,12 @@ export interface Task {
   name: string;
   completed: boolean;
   importance: 1 | 2 | 3;
+}
+
+export interface UserData {
+  user: User;
+  historyCalendarDays: CalendarDay[];
+  journalEntries: JournalEntry[];
+  tasks: Task[];
+  lastCheckinDate: Date | null;
 }

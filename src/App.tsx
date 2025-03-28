@@ -1,45 +1,135 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Book as JournalBook, ListTodo, Moon, Plus, ChevronDown, Calendar, ChevronLeft, ChevronRight, Trash2, Trophy, Zap, AlertTriangle } from 'lucide-react';
-import { User, DayStatus, CalendarDay, JournalEntry, Task } from './types';
+import { CheckCircle2, Book as JournalBook, ListTodo, Moon, Plus, ChevronDown, Calendar, ChevronLeft, ChevronRight, Trash2, Trophy, Zap, AlertTriangle, LogOut } from 'lucide-react';
+import { User, DayStatus, CalendarDay, JournalEntry, Task, UserData } from './types';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfDay, isSameMonth, addMonths, subMonths, differenceInDays, parseISO } from 'date-fns';
 import { translations, Language } from './translations';
 
-function App() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [language, setLanguage] = useState<Language>('en');
-  const t = translations[language];
-  const isRTL = language === 'ar';
+// Helper function to safely parse dates from localStorage
+const parseDates = (data: any) => {
+  if (Array.isArray(data)) {
+    return data.map(item => ({
+      ...item,
+      date: new Date(item.date)
+    }));
+  }
+  return [];
+};
 
-  const [currentUser, setCurrentUser] = useState<User>({
+const defaultUsers: User[] = [
+  {
     id: '1',
-    name: 'User 1',
+    username: 'yassin',
+    password: '123',
+    name: 'Yassin',
     cleanDays: 0,
     slips: 0,
     relapses: 0,
     startDate: null,
     currentStreak: 0,
     bestStreak: 0
+  },
+  {
+    id: '2',
+    username: 'ahmed',
+    password: '123',
+    name: 'Ahmed',
+    cleanDays: 0,
+    slips: 0,
+    relapses: 0,
+    startDate: null,
+    currentStreak: 0,
+    bestStreak: 0
+  }
+];
+
+function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('language') as Language) || 'en';
+  });
+  const t = translations[language];
+  const isRTL = language === 'ar';
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const savedAuth = localStorage.getItem('isAuthenticated');
+    return savedAuth === 'true';
   });
 
-  const [historyCalendarDays, setHistoryCalendarDays] = useState<CalendarDay[]>([]);
+  // Initialize state with data from localStorage
+  const initializeUserData = () => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      const username = parsedUser.username;
+      const savedData = localStorage.getItem(`userData_${username}`);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        return {
+          user: {
+            ...parsed.user,
+            startDate: parsed.user.startDate ? new Date(parsed.user.startDate) : null
+          },
+          historyCalendarDays: parseDates(parsed.historyCalendarDays),
+          journalEntries: parseDates(parsed.journalEntries),
+          tasks: parsed.tasks,
+          lastCheckinDate: parsed.lastCheckinDate ? new Date(parsed.lastCheckinDate) : null
+        };
+      }
+    }
+    return null;
+  };
+
+  const initialData = initializeUserData();
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => initialData?.user || null);
+  const [historyCalendarDays, setHistoryCalendarDays] = useState<CalendarDay[]>(() => initialData?.historyCalendarDays || []);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => initialData?.journalEntries || []);
+  const [tasks, setTasks] = useState<Task[]>(() => initialData?.tasks || []);
+  const [lastCheckinDate, setLastCheckinDate] = useState<Date | null>(() => initialData?.lastCheckinDate || null);
+
+  const [loginError, setLoginError] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
   const [currentDate] = useState(new Date());
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [newJournalEntry, setNewJournalEntry] = useState('');
   const [newJournalStatus, setNewJournalStatus] = useState<DayStatus>('clean');
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [showDailyCheckin, setShowDailyCheckin] = useState(true);
-  const [lastCheckinDate, setLastCheckinDate] = useState<Date | null>(null);
-  const [tasks, setTasks] = useState<Task[]>(
-    t.defaultTasks.map((name, index) => ({
-      id: (index + 1).toString(),
-      name,
-      completed: false,
-      importance: 2
-    }))
-  );
   const [newTaskName, setNewTaskName] = useState('');
+
+  // Save user data to localStorage
+  const saveUserData = () => {
+    if (currentUser) {
+      const userData: UserData = {
+        user: currentUser,
+        historyCalendarDays,
+        journalEntries,
+        tasks,
+        lastCheckinDate
+      };
+      localStorage.setItem(`userData_${currentUser.username}`, JSON.stringify(userData));
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    }
+  };
+
+  // Save data whenever it changes
+  useEffect(() => {
+    saveUserData();
+  }, [currentUser, historyCalendarDays, journalEntries, tasks, lastCheckinDate]);
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('isAuthenticated', isAuthenticated.toString());
+    if (!isAuthenticated) {
+      localStorage.removeItem('currentUser');
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (lastCheckinDate) {
@@ -59,6 +149,66 @@ function App() {
     });
   }, [language]);
 
+  const handleLogin = () => {
+    const user = defaultUsers.find(u => u.username === username && u.password === password);
+    if (user) {
+      const userData = loadUserData(user.username) || {
+        user,
+        historyCalendarDays: [],
+        journalEntries: [],
+        tasks: t.defaultTasks.map((name, index) => ({
+          id: (index + 1).toString(),
+          name,
+          completed: false,
+          importance: 2
+        })),
+        lastCheckinDate: null
+      };
+
+      setCurrentUser(userData.user);
+      setHistoryCalendarDays(userData.historyCalendarDays);
+      setJournalEntries(userData.journalEntries);
+      setTasks(userData.tasks);
+      setLastCheckinDate(userData.lastCheckinDate);
+      setIsAuthenticated(true);
+      setLoginError(false);
+    } else {
+      setLoginError(true);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setUsername('');
+    setPassword('');
+    setHistoryCalendarDays([]);
+    setJournalEntries([]);
+    setTasks([]);
+    setLastCheckinDate(null);
+    setActiveTab('home');
+  };
+
+  // Load user data from localStorage
+  const loadUserData = (username: string) => {
+    const savedData = localStorage.getItem(`userData_${username}`);
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      const userData: UserData = {
+        user: {
+          ...parsed.user,
+          startDate: parsed.user.startDate ? new Date(parsed.user.startDate) : null
+        },
+        historyCalendarDays: parseDates(parsed.historyCalendarDays),
+        journalEntries: parseDates(parsed.journalEntries),
+        tasks: parsed.tasks,
+        lastCheckinDate: parsed.lastCheckinDate ? new Date(parsed.lastCheckinDate) : null
+      };
+      return userData;
+    }
+    return null;
+  };
+
   const calculateStreak = (startDate: Date | null) => {
     if (!startDate) return 0;
     const today = new Date();
@@ -70,6 +220,7 @@ function App() {
   const handleStartDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = event.target.value ? parseISO(event.target.value) : null;
     setCurrentUser(prev => {
+      if (!prev) return null;
       const newStreak = calculateStreak(newDate);
       return {
         ...prev,
@@ -82,26 +233,23 @@ function App() {
 
   const updateStreak = (status: DayStatus, date: Date) => {
     setCurrentUser(user => {
+      if (!user) return null;
       const newUser = { ...user };
 
       if (status === 'clean') {
-        // Set start date if not set
         if (!user.startDate) {
           newUser.startDate = new Date();
           newUser.currentStreak = 1;
         }
         
-        // Update best streak if current is higher
         if (newUser.currentStreak > user.bestStreak) {
           newUser.bestStreak = newUser.currentStreak;
         }
       } else if (status === 'relapse') {
-        // Reset streak on relapse and increment relapse count
         newUser.currentStreak = 0;
         newUser.startDate = null;
         newUser.relapses += 1;
       } else if (status === 'slip') {
-        // Increment slip count
         newUser.slips += 1;
       }
 
@@ -153,16 +301,20 @@ function App() {
 
   const resetProgress = () => {
     if (confirm(t.resetConfirm)) {
-      setCurrentUser({
-        ...currentUser,
-        cleanDays: 0,
-        slips: 0,
-        relapses: 0,
-        startDate: null,
-        currentStreak: 0,
-        bestStreak: 0
+      setCurrentUser(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          cleanDays: 0,
+          slips: 0,
+          relapses: 0,
+          startDate: null,
+          currentStreak: 0,
+          bestStreak: 0
+        };
       });
-      setHistoryCalendarDays([]);
+      setLastCheckinDate(null);
+      setShowDailyCheckin(true);
     }
   };
 
@@ -275,13 +427,13 @@ function App() {
               let bgColor = 'bg-surface';
               if (calendarDay) {
                 bgColor = calendarDay.status === 'clean' ? 'bg-success/20' :
-                          calendarDay.status === 'slip' ? 'bg-warning/20' :
-                          'bg-error/20';
+                          calendarDay.status === 'slip' ? 'bg-warning/60' :
+                          'bg-error/40';
               }
               return (
                 <button
                   key={index}
-                  className={`aspect-square rounded-full ${bgColor} hover:bg-primary/20 flex items-center justify-center`}
+                  className={`aspect-square rounded-full ${bgColor} flex items-center justify-center`}
                   onClick={() => {
                     const nextStatus = getNextStatus(calendarDay);
                     updateHistoryStatus(nextStatus, day);
@@ -305,7 +457,7 @@ function App() {
             <div className="bg-surface rounded-lg p-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-primary mb-2">{t.cleanDays}</h2>
-                <p className="text-6xl font-bold text-on-surface">{currentUser.currentStreak}</p>
+                <p className="text-6xl font-bold text-on-surface">{currentUser?.currentStreak || 0}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -314,7 +466,7 @@ function App() {
                     <Trophy size={20} className="text-primary" />
                     <h3 className="text-primary font-semibold">{t.bestStreak}</h3>
                   </div>
-                  <p className="text-2xl font-bold text-center text-on-surface">{currentUser.bestStreak}</p>
+                  <p className="text-2xl font-bold text-center text-on-surface">{currentUser?.bestStreak || 0}</p>
                 </div>
                 <div className="bg-background/50 rounded-lg p-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
@@ -323,7 +475,7 @@ function App() {
                   </div>
                   <input
                     type="date"
-                    value={currentUser.startDate ? format(currentUser.startDate, 'yyyy-MM-dd') : ''}
+                    value={currentUser?.startDate ? format(currentUser.startDate, 'yyyy-MM-dd') : ''}
                     onChange={handleStartDateChange}
                     className="w-full bg-surface text-on-surface p-2 rounded-lg border border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
@@ -336,14 +488,14 @@ function App() {
                     <AlertTriangle size={20} className="text-warning" />
                     <h3 className="text-warning font-semibold">{t.slips}</h3>
                   </div>
-                  <p className="text-2xl font-bold text-center text-warning">{currentUser.slips}</p>
+                  <p className="text-2xl font-bold text-center text-warning">{currentUser?.slips || 0}</p>
                 </div>
                 <div className="bg-error/10 rounded-lg p-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Zap size={20} className="text-error" />
                     <h3 className="text-error font-semibold">{t.relapses}</h3>
                   </div>
-                  <p className="text-2xl font-bold text-center text-error">{currentUser.relapses}</p>
+                  <p className="text-2xl font-bold text-center text-error">{currentUser?.relapses || 0}</p>
                 </div>
               </div>
             </div>
@@ -433,8 +585,8 @@ function App() {
                   onChange={(e) => setNewJournalStatus(e.target.value as DayStatus)}
                   className={`w-full appearance-none py-2 px-4 pr-10 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                     newJournalStatus === 'clean' ? 'bg-success/20 text-success' :
-                    newJournalStatus === 'slip' ? 'bg-warning/20 text-warning' :
-                    'bg-error/20 text-error'
+                    newJournalStatus === 'slip' ? 'bg-warning/60 text-warning' :
+                    'bg-error/40 text-error'
                   }`}
                 >
                   <option value="clean" className="bg-surface text-success">🟢 {t.clean}</option>
@@ -525,10 +677,70 @@ function App() {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className={`min-h-screen bg-background text-on-background ${isRTL ? 'rtl' : 'ltr'}`}>
+        <header className="bg-surface p-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-primary">{t.appTitle}</h1>
+          <button
+            onClick={() => setLanguage(lang => lang === 'en' ? 'ar' : 'en')}
+            className="text-primary hover:text-primary/80 transition-colors text-sm font-medium"
+          >
+            {language === 'en' ? 'العربية' : 'English'}
+          </button>
+        </header>
+
+        <main className="container mx-auto px-4 py-6">
+          <div className="max-w-md mx-auto">
+            <div className="bg-surface rounded-lg p-6 space-y-4">
+              <h2 className="text-2xl font-bold text-primary text-center mb-6">{t.login}</h2>
+              {loginError && (
+                <div className="bg-error/10 text-error p-3 rounded-lg text-center">
+                  {t.invalidCredentials}
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-1">{t.username}</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-background text-on-background p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-1">{t.password}</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-background text-on-background p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                </div>
+                <button
+                  onClick={handleLogin}
+                  className="w-full bg-primary text-on-primary py-2 px-4 rounded-lg font-medium"
+                >
+                  {t.loginButton}
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen bg-background text-on-background pb-20 ${isRTL ? 'rtl' : 'ltr'}`}>
       <header className="bg-surface p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-primary">{t.appTitle}</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-primary">{t.appTitle}</h1>
+          <span className="text-primary/70">
+            {t.welcome}, {currentUser?.name}
+          </span>
+        </div>
         <div className="flex items-center gap-4">
           <button
             onClick={() => setLanguage(lang => lang === 'en' ? 'ar' : 'en')}
@@ -536,7 +748,13 @@ function App() {
           >
             {language === 'en' ? 'العربية' : 'English'}
           </button>
-          <Moon className="text-primary" size={24} />
+          <button
+            onClick={handleLogout}
+            className="text-primary hover:text-primary/80 transition-colors"
+            title={t.logout}
+          >
+            <LogOut size={24} />
+          </button>
         </div>
       </header>
 
